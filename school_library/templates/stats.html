@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+
+{% block title %}統計分析 - 智慧圖書館{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1>📊 借閱統計分析</h1>
+    <p style="color: #666;">了解最近七天的圖書借閱狀況。</p>
+</div>
+
+<div class="card">
+    <canvas id="loanChart" width="400" height="200"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    async function loadStats() {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        
+        const labels = data.map(item => item.date);
+        const counts = data.map(item => item.count);
+        
+        const ctx = document.getElementById('loanChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '每日借書量',
+                    data: counts,
+                    borderColor: '#4A90E2',
+                    backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    pointBackgroundColor: '#4A90E2',
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    }
+    
+    window.onload = loadStats;
+</script>
+{% endblock %}

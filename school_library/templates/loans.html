@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+
+{% block title %}借閱紀錄 - 智慧圖書館{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <h1>📖 目前借閱中紀錄</h1>
+    <p style="color: #666;">這裡顯示所有尚未歸還的書籍。</p>
+</div>
+
+<div class="card">
+    {% if loans %}
+    <table>
+        <thead>
+            <tr>
+                <th>書名</th>
+                <th>借閱學生</th>
+                <th>借出日期</th>
+                <th>應還日期</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for loan in loans %}
+            <tr>
+                <td><strong>{{ loan.book_title }}</strong></td>
+                <td>{{ loan.student_name }} ({{ loan.student_id }})</td>
+                <td>{{ loan.loan_date }}</td>
+                <td style="color: var(--danger-color); font-weight: bold;">
+                    {{ loan.due_date }}
+                    {% if loan.is_overdue %}
+                    <br><span class="badge badge-borrowed" style="font-size: 0.7rem;">⚠️ 已逾期</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <form action="/loans/return/{{ loan.id }}" method="post" style="margin: 0;">
+                        <button type="submit" class="btn btn-primary" style="padding: 0.3rem 1rem; font-size: 0.85rem; background-color: var(--success-color);">📗 歸還</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 3rem;">
+        <p style="font-size: 1.5rem; color: #ccc;">目前沒有借閱中的紀錄喔！😊</p>
+        <a href="/" class="btn btn-primary" style="text-decoration: none;">去借書吧</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

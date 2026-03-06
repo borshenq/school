@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}國小圖書管理系統{% endblock %}</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --secondary-color: #F5A623;
+            --success-color: #27AE60;
+            --danger-color: #E74C3C;
+            --bg-color: #F0F4F8;
+            --card-bg: #FFFFFF;
+            --text-color: #333333;
+        }
+        body {
+            font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            color: var(--text-color);
+        }
+        nav {
+            background-color: var(--primary-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        nav .logo { color: white; font-size: 1.5rem; font-weight: bold; text-decoration: none; }
+        nav .links a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            margin-left: 1.5rem;
+            transition: opacity 0.2s;
+        }
+        nav .links a:hover { opacity: 0.8; }
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .card {
+            background-color: var(--card-bg);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th { background-color: #f8f9fa; color: #666; }
+        .badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .badge-available { background-color: #E8F5E9; color: var(--success-color); }
+        .badge-borrowed { background-color: #FFEBEE; color: var(--danger-color); }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+        .form-control {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .btn {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .btn:hover { transform: scale(1.02); background-color: #e6951a; }
+        .btn-primary { background-color: var(--primary-color); }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/" class="logo">📚 智慧圖書館</a>
+        <div class="links">
+            <a href="/">首頁</a>
+            <a href="/books">書籍管理</a>
+            <a href="/students">學生管理</a>
+            <a href="/loans">借閱紀錄</a>
+            <a href="/stats">統計分析</a>
+            <a href="/scan" style="background: var(--secondary-color); padding: 0.3rem 0.8rem; border-radius: 10px;">📷 掃描器</a>
+        </div>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+{% extends "library/layout.html" %}
+
+{% block title %}書籍管理 - 智慧圖書館{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <h1>📚 館藏與數位資源管理 (Django)</h1>
+    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        <!-- 分類篩選 -->
+        <select onchange="location.href='?cat=' + this.value" style="padding: 0.6rem; border-radius: 8px; border: 1px solid #ddd;">
+            <option value="">所有分類</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if current_cat == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+        </select>
+        
+        {% if user.is_authenticated %}
+        <form action="{% url 'import_books' %}" method="post" enctype="multipart/form-data" style="margin: 0; display: flex; align-items: center; gap: 0.3rem;">
+            {% csrf_token %}
+            <input type="file" name="file" accept=".csv" required style="font-size: 0.8rem; width: 130px;">
+            <button type="submit" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background-color: var(--primary-color);">📥 匯入</button>
+        </form>
+        <a href="{% url 'export_books' %}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background-color: var(--success-color); text-decoration: none;">📤 匯出</a>
+        {% endif %}
+        
+        <form action="{% url 'list_books' %}" method="get" style="display: flex; gap: 0.5rem; margin: 0;">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="搜尋書名/作者/ISBN..." style="padding: 0.6rem; border-radius: 8px; border: 1px solid #ddd;">
+            <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1rem;">🔍</button>
+        </form>
+        
+        {% if user.is_authenticated %}
+        <button class="btn btn-primary" onclick="document.getElementById('add-book-form').scrollIntoView({behavior: 'smooth'})">➕ 新增</button>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 80px;">實體 ID</th>
+                <th>書籍資訊</th>
+                <th>分類</th>
+                <th>狀態</th>
+                <th>數位資源</th>
+                {% if user.is_authenticated %}<th>操作</th>{% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for book in books %}
+            <tr>
+                <td><span class="badge" style="background-color: #eee; color: #666;">#{{ book.id }}</span></td>
+                <td>
+                    <strong>{{ book.title }}</strong>
+                    <br><small style="color: #888;">作者: {{ book.author }} | ISBN: {{ book.isbn }}</small>
+                    <br><small style="color: #aaa;">複本編號: {{ book.copy_number }}</small>
+                </td>
+                <td><span class="badge" style="background-color: #E3F2FD; color: #1976D2;">{{ book.category }}</span></td>
+                <td>
+                    {% if book.is_available %}
+                    <span class="badge badge-available">在館中</span>
+                    {% else %}
+                    <span class="badge badge-borrowed">已借出</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if book.ebook_url %}
+                    <a href="{{ book.ebook_url }}" target="_blank" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; background-color: #673AB7; text-decoration: none;">🌐 線上閱讀</a>
+                    {% else %}
+                    <span style="color: #ccc; font-size: 0.8rem;">無電子書</span>
+                    {% endif %}
+                </td>
+                {% if user.is_authenticated %}
+                <td>
+                    <form action="{% url 'delete_book' book.id %}" method="post" style="margin: 0;" onsubmit="return confirm('確定要刪除嗎？');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn" style="background-color: var(--danger-color); padding: 0.3rem 0.6rem; font-size: 0.75rem;">🗑️</button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if user.is_authenticated %}
+<div id="add-book-form" class="card" style="border-top: 5px solid var(--primary-color);">
+... (表單內容不變) ...
+</div>
+{% endif %}    <h3>➕ 新增書籍 / 數位資源</h3>
+    <form action="{% url 'add_book' %}" method="post" id="bookForm">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>ISBN</label>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="text" name="isbn" id="isbnInput" class="form-control" placeholder="請輸入 ISBN" required>
+                <button type="button" class="btn" onclick="fetchBookInfo()" style="background-color: #4CAF50; white-space: nowrap;">🔍 抓取資料</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>書名</label>
+            <input type="text" name="title" id="titleInput" class="form-control" placeholder="請輸入書名" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label>作者</label>
+                <input type="text" name="author" id="authorInput" class="form-control" placeholder="請輸入作者" required>
+            </div>
+            <div class="form-group">
+                <label>分類標籤</label>
+                <input type="text" name="category" id="categoryInput" class="form-control" value="未分類">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>電子書連結 (選填)</label>
+            <input type="url" name="ebook_url" class="form-control" placeholder="https://...">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">確認新增資源</button>
+    </form>
+</div>
+
+<script>
+    async function fetchBookInfo() {
+        const isbn = document.getElementById('isbnInput').value.trim();
+        if (!isbn) return alert('請先輸入 ISBN 碼！');
+        
+        try {
+            const response = await fetch(`/api/isbn/${isbn}/`);
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('titleInput').value = data.title;
+                document.getElementById('authorInput').value = data.author;
+                document.getElementById('categoryInput').value = data.category;
+            } else {
+                alert('找不到該 ISBN 的書籍資料。');
+            }
+        } catch (error) {
+            alert('連線失敗。');
+        }
+    }
+</script>
+{% endblock %}

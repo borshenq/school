@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block title %}學生管理 - 智慧圖書館{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>🧒 學生名單管理</h1>
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <form action="/students/import" method="post" enctype="multipart/form-data" style="margin: 0; display: flex; align-items: center; gap: 0.3rem;">
+            <input type="file" name="file" accept=".csv" required style="font-size: 0.8rem; width: 150px;">
+            <button type="submit" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background-color: var(--primary-color);">📥 匯入</button>
+        </form>
+        <a href="/students/export" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background-color: var(--success-color); text-decoration: none;">📤 匯出 CSV</a>
+        <button class="btn btn-primary" onclick="document.getElementById('add-student-form').scrollIntoView({behavior: 'smooth'})">➕ 新增學生</button>
+    </div>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>學號</th>
+                <th>姓名</th>
+                <th>班級</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td><code>{{ student.student_id }}</code></td>
+                <td><strong>{{ student.name }}</strong></td>
+                <td>{{ student.grade }}</td>
+                <td>
+                    <div style="display: flex; gap: 0.3rem;">
+                        <a href="/students/{{ student.id }}/history" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; text-decoration: none; background-color: var(--primary-color);">📜 歷史</a>
+                        <a href="/students/{{ student.id }}/card" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; text-decoration: none; background-color: var(--secondary-color);">🪪 借書證</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="add-student-form" class="card" style="border-top: 5px solid var(--secondary-color);">
+    <h3>➕ 新增學生資料</h3>
+    <form action="/students/add" method="post">
+        <div class="form-group">
+            <label>姓名</label>
+            <input type="text" name="name" class="form-control" placeholder="請輸入學生姓名" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label>學號</label>
+                <input type="text" name="student_id" class="form-control" placeholder="例如: S004" required>
+            </div>
+            <div class="form-group">
+                <label>班級</label>
+                <input type="text" name="grade" class="form-control" placeholder="例如: 三年一班" required>
+            </div>
+        </div>
+        <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">確認新增學生</button>
+    </form>
+</div>
+{% endblock %}

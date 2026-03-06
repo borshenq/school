@@ -1,0 +1,49 @@
+{% extends "library/layout.html" %}
+
+{% block title %}首頁 - 智慧圖書館{% endblock %}
+
+{% block content %}
+{% if error == 'limit_reached' %}
+<div style="background-color: #FFEBEE; color: var(--danger-color); padding: 1rem; border-radius: 10px; margin-bottom: 2rem; border: 1px solid var(--danger-color);">
+    🚫 借書失敗：該學生已達到借書上限（最多 {{ limit }} 本）。
+</div>
+{% elif error == 'not_found' %}
+<div style="background-color: #FFF3E0; color: #E65100; padding: 1rem; border-radius: 10px; margin-bottom: 2rem; border: 1px solid #FFE0B2;">
+    🔍 借書失敗：找不到書籍 ID 或學號，請重新檢查。
+</div>
+{% endif %}
+
+<h1 style="text-align: center; margin-bottom: 2rem;">早安！今天想看什麼書呢？</h1>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div style="background: white; padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid var(--primary-color);">
+        <p>總藏書量</p>
+        <h2 style="font-size: 2.5rem; margin: 0.5rem 0; color: var(--primary-color);">{{ books_count }}</h2>
+    </div>
+    <div style="background: white; padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid var(--secondary-color);">
+        <p>目前借出</p>
+        <h2 style="font-size: 2.5rem; margin: 0.5rem 0; color: var(--secondary-color);">{{ loans_active }}</h2>
+    </div>
+    <div style="background: white; padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid var(--danger-color);">
+        <p>逾期未還</p>
+        <h2 style="font-size: 2.5rem; margin: 0.5rem 0; color: var(--danger-color);">{{ overdue_count }}</h2>
+    </div>
+</div>
+
+<div class="card">
+    {% if user.is_authenticated %}
+    <h3 style="margin-top: 0;">快速登記借書</h3>
+    <form action="{% url 'borrow_book' %}" method="post" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        {% csrf_token %}
+        <input type="number" name="book_id" placeholder="書籍 ID" required style="padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd; flex: 1; min-width: 150px;">
+        <input type="text" name="student_id" placeholder="學號 (例: S001)" required style="padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd; flex: 1; min-width: 150px;">
+        <button type="submit" class="btn">🚀 登記借書</button>
+    </form>
+    {% else %}
+    <div style="text-align: center; padding: 1rem;">
+        <p style="color: #666;">您目前是以訪客身份瀏覽。若要進行借書操作，請先登入管理員帳號。</p>
+        <a href="/admin/login/?next=/" class="btn btn-primary" style="text-decoration: none;">🔑 立即登入系統</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "layout.html" %}
+
+{% block title %}智慧掃描器 - 智慧圖書館{% endblock %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 2rem;">
+    <h1>📷 智慧掃描器</h1>
+    <p style="color: #666;">請將書本條碼、ISBN 或學生證置於鏡頭前。</p>
+</div>
+
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <div id="reader" style="width: 100%; border-radius: 15px; overflow: hidden; border: none;"></div>
+    
+    <div id="scan-result" style="margin-top: 2rem; display: none; text-align: center; border-top: 2px dashed #eee; padding-top: 1rem;">
+        <h3 id="scanned-type" style="color: var(--primary-color);">偵測到內容</h3>
+        <p id="scanned-data" style="font-size: 1.5rem; font-weight: bold; margin: 1rem 0;"></p>
+        
+        <div id="action-buttons" style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            <!-- 按鈕將由 JS 動態生成 -->
+        </div>
+        
+        <button onclick="resetScanner()" class="btn" style="background-color: #eee; color: #666; margin-top: 1.5rem;">重新掃描</button>
+    </div>
+</div>
+
+<script>
+    const html5QrCode = new Html5Qrcode("reader");
+    const resultDiv = document.getElementById('scan-result');
+    const typeLabel = document.getElementById('scanned-type');
+    const dataLabel = document.getElementById('scanned-data');
+    const actionsDiv = document.getElementById('action-buttons');
+
+    const qrConfig = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+    const onScanSuccess = (decodedText, decodedResult) => {
+        // 暫停掃描
+        html5QrCode.pause(true);
+        processResult(decodedText);
+    };
+
+    const processResult = (text) => {
+        resultDiv.style.display = 'block';
+        dataLabel.innerText = text;
+        actionsDiv.innerHTML = '';
+        
+        // 判斷掃描內容類型
+        if (text.length >= 10 && !isNaN(text)) {
+            // 可能是 ISBN
+            typeLabel.innerText = "📚 偵測到 ISBN";
+            actionsDiv.innerHTML = `<button onclick="location.href='/books?q=${text}'" class="btn btn-primary">查詢此書</button>`;
+        } else if (text.startsWith('S') && text.length >= 3) {
+            // 可能是學號 (例: S001)
+            typeLabel.innerText = "🧑 偵測到學生學號";
+            actionsDiv.innerHTML = `<button onclick="location.href='/students/history?q=${text}'" class="btn">查看歷史紀錄</button>`;
+        } else if (!isNaN(text) && text.length < 10) {
+            // 可能是書籍實體 ID
+            typeLabel.innerText = "📖 偵測到書籍實體 ID";
+            actionsDiv.innerHTML = `
+                <button onclick="borrowWithId('${text}')" class="btn btn-primary">立即借書</button>
+            `;
+        } else {
+            typeLabel.innerText = "❔ 偵測到未知內容";
+        }
+    };
+
+    const borrowWithId = (id) => {
+        const student_id = prompt("請輸入借書學號：");
+        if (student_id) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/loans/borrow';
+            const bInput = document.createElement('input');
+            bInput.name = 'book_id'; bInput.value = id;
+            const sInput = document.createElement('input');
+            sInput.name = 'student_id'; sInput.value = student_id;
+            form.appendChild(bInput); form.appendChild(sInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+    };
+
+    const resetScanner = () => {
+        resultDiv.style.display = 'none';
+        html5QrCode.resume();
+    };
+
+    // 啟動相機
+    Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length > 0) {
+            html5QrCode.start(
+                { facingMode: "environment" }, // 使用後置鏡頭
+                qrConfig,
+                onScanSuccess
+            );
+        }
+    }).catch(err => {
+        alert("無法啟動相機，請檢查權限設定。");
+    });
+</script>
+{% endblock %}
