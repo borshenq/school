@@ -1,0 +1,50 @@
+{% extends "library/layout.html" %}
+
+{% block title %}{{ student.name }} 的借閱歷史 - 智慧圖書館{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h1>📜 借閱歷史紀錄</h1>
+        <p style="color: #666;">學生：<strong>{{ student.name }}</strong> (學號: {{ student.student_id }}, 班級: {{ student.grade }})</p>
+    </div>
+    <a href="/students" class="btn btn-primary" style="text-decoration: none;">🔙 返回學生名單</a>
+</div>
+
+<div class="card">
+    {% if history %}
+    <table>
+        <thead>
+            <tr>
+                <th>書名</th>
+                <th>借出日期</th>
+                <th>應還日期</th>
+                <th>歸還日期</th>
+                <th>狀態</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for loan in history %}
+            <tr>
+                <td><strong>{{ loan.book_title }}</strong></td>
+                <td>{{ loan.loan_date }}</td>
+                <td>{{ loan.due_date }}</td>
+                <td>{{ loan.return_date|default:'-' }}</td>
+                <td>
+                    {% if loan.is_returned %}
+                    <span class="badge" style="background-color: #E0E0E0; color: #666;">已歸還</span>
+                    {% else %}
+                    <span class="badge badge-borrowed">借閱中</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 3rem;">
+        <p style="font-size: 1.5rem; color: #ccc;">這位學生目前還沒有任何借書紀錄喔！📖</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

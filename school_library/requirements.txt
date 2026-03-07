@@ -1,3 +1,10 @@
-django
+fastapi
+uvicorn
+sqlalchemy
+jinja2
+python-multipart
 httpx
 python-dotenv
+django
+gunicorn
+

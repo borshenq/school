@@ -80,8 +80,8 @@
         <div class="form-group">
             <label>ISBN (輸入後可點擊旁邊的按鈕自動填寫)</label>
             <div style="display: flex; gap: 0.5rem;">
-                <input type="text" name="isbn" id="isbnInput" class="form-control" placeholder="請輸入 ISBN (例如: 9789573317241)" required onkeypress="if(event.keyCode==13){ event.preventDefault(); fetchBookInfo(); }">
-                <button type="button" class="btn" onclick="fetchBookInfo()" style="background-color: #4CAF50; white-space: nowrap;">🔍 抓取資料</button>
+                <input type="text" name="isbn" id="isbnInput" class="form-control" placeholder="請輸入 ISBN (例如: 9789573317241)" required onkeypress="if(event.keyCode==13){ event.preventDefault(); fetchBookInfo(document.getElementById('fetchBtn')); }">
+                <button type="button" class="btn" id="fetchBtn" onclick="fetchBookInfo(this)" style="background-color: #4CAF50; white-space: nowrap;">🔍 抓取資料</button>
             </div>
         </div>
         <div class="form-group">
@@ -107,14 +107,13 @@
 </div>
 
 <script>
-    async function fetchBookInfo() {
+    async function fetchBookInfo(btn) {
         const isbn = document.getElementById('isbnInput').value.trim();
         if (!isbn) {
             alert('請先輸入 ISBN 碼！');
             return;
         }
         
-        const btn = event.target;
         const originalText = btn.innerText;
         btn.innerText = '⏳ 查詢中...';
         btn.disabled = true;

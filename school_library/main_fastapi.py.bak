@@ -143,14 +143,18 @@ async def import_books(file: UploadFile = File(...), db: Session = Depends(get_d
         existing_copies = db.query(Book).filter(Book.isbn == row["ISBN"]).count()
         new_book = Book(title=row["書名"], author=row["作者"], isbn=row["ISBN"], category=row.get("分類", "未分類"), ebook_url=row.get("電子書連結") if row.get("電子書連結") else None, copy_number=existing_copies + 1)
         db.add(new_book)
+        db.flush() # 增加此行以確保複本序號計算正確
     db.commit()
     return RedirectResponse(url="/books", status_code=303)
 
 # --- 學生管理 ---
 @app.get("/students", response_class=HTMLResponse)
-async def list_students(request: Request, db: Session = Depends(get_db)):
-    students = db.query(Student).all()
-    return templates.TemplateResponse("students.html", {"request": request, "students": students})
+async def list_students(request: Request, q: str = None, db: Session = Depends(get_db)):
+    query = db.query(Student)
+    if q:
+        query = query.filter(or_(Student.name.contains(q), Student.student_id.contains(q), Student.grade.contains(q)))
+    students = query.all()
+    return templates.TemplateResponse("students.html", {"request": request, "students": students, "search_query": q})
 
 @app.post("/students/add")
 async def add_student(name: str = Form(...), student_id: str = Form(...), grade: str = Form(...), db: Session = Depends(get_db)):
@@ -164,8 +168,28 @@ async def student_history(id: int, request: Request, db: Session = Depends(get_d
     student = db.query(Student).filter(Student.id == id).first()
     if not student: raise HTTPException(status_code=404)
     loans = db.query(Loan).filter(Loan.student_id == student.id).order_by(Loan.loan_date.desc()).all()
-    history = [{"book_title": db.query(Book).filter(Book.id == l.book_id).first().title, "loan_date": l.loan_date, "due_date": l.due_date, "return_date": l.return_date, "is_returned": l.return_date is not None} for l in loans]
+    history = []
+    for l in loans:
+        book = db.query(Book).filter(Book.id == l.book_id).first()
+        history.append({
+            "book_title": book.title if book else "(書籍已從館藏移除)",
+            "loan_date": l.loan_date,
+            "due_date": l.due_date,
+            "return_date": l.return_date,
+            "is_returned": l.return_date is not None
+        })
     return templates.TemplateResponse("student_history.html", {"request": request, "student": student, "history": history})
+
+@app.post("/students/delete/{student_id}")
+async def delete_student(student_id: int, db: Session = Depends(get_db)):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if student:
+        # 檢查是否有未歸還的書
+        active_loans = db.query(Loan).filter(Loan.student_id == student.id, Loan.return_date == None).count()
+        if active_loans == 0:
+            db.delete(student)
+            db.commit()
+    return RedirectResponse(url="/students", status_code=303)
 
 @app.get("/students/{id}/card", response_class=HTMLResponse)
 async def student_card(id: int, request: Request, db: Session = Depends(get_db)):

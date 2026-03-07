@@ -1,0 +1,190 @@
+{% extends "library/layout.html" %}
+
+{% block title %}智慧借還工作台 - 智慧圖書館{% endblock %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 1.5rem;">
+    <h1>⚡ 智慧借還工作台</h1>
+    <p id="mode-status" style="color: #666; font-size: 1.1rem;">請掃描「學生證」或「書籍登錄號」開始操作</p>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 1000px; margin: 0 auto;">
+    <!-- 左側：掃描區域 -->
+    <div>
+        <div class="card" style="padding: 0; overflow: hidden; position: relative;">
+            <div id="reader" style="width: 100%; border: none;"></div>
+            <div id="scan-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border: 4px solid var(--primary-color); opacity: 0.3; display: none;"></div>
+        </div>
+        
+        <div id="current-borrower" class="card" style="margin-top: 1rem; border-left: 5px solid #ccc; display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <small style="color: #888;">目前借閱學生</small>
+                    <h2 id="borrower-name" style="margin: 0;">-</h2>
+                    <p id="borrower-id" style="margin: 0; color: #666; font-family: monospace;"></p>
+                </div>
+                <button onclick="clearBorrower()" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background-color: #f44336;">清除並結束</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右側：即時結果列表 -->
+    <div>
+        <h3>📋 最近操作紀錄</h3>
+        <div id="log-list" style="height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.8rem;">
+            <div style="text-align: center; color: #ccc; padding-top: 5rem;">等待掃描中...</div>
+        </div>
+        
+        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+            <input type="text" id="manual-input" placeholder="手動輸入號碼..." style="flex: 1; padding: 0.8rem; border-radius: 8px; border: 1px solid #ddd;">
+            <button onclick="manualProcess()" class="btn btn-primary">送出</button>
+        </div>
+    </div>
+</div>
+
+<!-- 提示音效 (隱藏) -->
+<audio id="sound-success" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+<audio id="sound-error" src="https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3"></audio>
+
+<script>
+    const html5QrCode = new Html5Qrcode("reader");
+    const logList = document.getElementById('log-list');
+    const borrowerCard = document.getElementById('current-borrower');
+    const borrowerName = document.getElementById('borrower-name');
+    const borrowerIdLabel = document.getElementById('borrower-id');
+    const statusMsg = document.getElementById('mode-status');
+    
+    let currentStudentId = null;
+    let isProcessing = false;
+
+    const qrConfig = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+    const onScanSuccess = (decodedText) => {
+        if (isProcessing) return;
+        processCode(decodedText);
+    };
+
+    async function processCode(code) {
+        isProcessing = true;
+        flashOverlay();
+        
+        const url = `/api/scan?code=${code}${currentStudentId ? '&student_id=' + currentStudentId : ''}`;
+        
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.status === 'student') {
+                // 設定目前借閱者
+                setBorrower(data.sid, data.name);
+                addLog('student', data.message);
+                playSound('success');
+            } else if (data.status === 'borrowed') {
+                addLog('borrow', data.message);
+                playSound('success');
+            } else if (data.status === 'returned') {
+                addLog('return', data.message);
+                playSound('success');
+            } else if (data.status === 'error') {
+                addLog('error', data.message);
+                playSound('error');
+            } else if (data.status === 'book_info') {
+                addLog('info', data.message);
+            }
+        } catch (error) {
+            addLog('error', '連線失敗，請檢查網路');
+        } finally {
+            setTimeout(() => { isProcessing = false; }, 1000); // 防抖
+        }
+    }
+
+    function setBorrower(id, name) {
+        currentStudentId = id;
+        borrowerName.innerText = name;
+        borrowerIdLabel.innerText = id;
+        borrowerCard.style.display = 'block';
+        borrowerCard.style.borderLeftColor = '#4CAF50';
+        statusMsg.innerText = `🟢 批次借書模式：請掃描書籍登錄號`;
+        statusMsg.style.color = '#2E7D32';
+    }
+
+    function clearBorrower() {
+        currentStudentId = null;
+        borrowerCard.style.display = 'none';
+        statusMsg.innerText = `請掃描「學生證」或「書籍登錄號」開始操作`;
+        statusMsg.style.color = '#666';
+        addLog('info', '已清除借閱學生，回到一般模式');
+    }
+
+    function addLog(type, message) {
+        const time = new Date().toLocaleTimeString();
+        const colors = {
+            'student': '#E3F2FD', 'borrow': '#E8F5E9', 'return': '#F1F8E9', 'error': '#FFEBEE', 'info': '#F5F5F5'
+        };
+        const icons = {
+            'student': '🧑', 'borrow': '📗', 'return': '⏪', 'error': '❌', 'info': 'ℹ️'
+        };
+        
+        if (logList.children.length > 0 && logList.innerText === "等待掃描中...") {
+            logList.innerHTML = '';
+        }
+
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.style.padding = '0.8rem';
+        div.style.marginBottom = '0';
+        div.style.backgroundColor = colors[type] || '#fff';
+        div.innerHTML = `<span style="font-size:0.8rem; color:#999;">[${time}]</span> ${icons[type]} ${message}`;
+        logList.insertBefore(div, logList.firstChild);
+    }
+
+    function manualProcess() {
+        const input = document.getElementById('manual-input');
+        if (input.value) {
+            processCode(input.value);
+            input.value = '';
+        }
+    }
+
+    function flashOverlay() {
+        const overlay = document.getElementById('scan-overlay');
+        overlay.style.display = 'block';
+        setTimeout(() => { overlay.style.display = 'none'; }, 200);
+    }
+
+    function playSound(type) {
+        document.getElementById(`sound-${type}`).play().catch(e => {});
+    }
+
+    // --- 優化：支援硬體掃描槍 (USB Barcode Scanner) ---
+    let barcodeBuffer = "";
+    let lastKeyTime = Date.now();
+
+    window.addEventListener('keydown', (e) => {
+        const currentTime = Date.now();
+        
+        // 判斷是否為快速連續輸入 (掃描槍特性)
+        if (currentTime - lastKeyTime > 100) {
+            barcodeBuffer = ""; // 間隔太長，視為手動打字，清空緩衝
+        }
+        
+        if (e.key === 'Enter') {
+            if (barcodeBuffer.length > 2) {
+                processCode(barcodeBuffer);
+                barcodeBuffer = "";
+            }
+        } else if (e.key.length === 1) {
+            barcodeBuffer += e.key;
+        }
+        
+        lastKeyTime = currentTime;
+    });
+
+    // 啟動相機
+    Html5Qrcode.getCameras().then(cameras => {
+        if (cameras && cameras.length > 0) {
+            html5QrCode.start({ facingMode: "environment" }, qrConfig, onScanSuccess);
+        }
+    }).catch(err => { console.error(err); });
+</script>
+{% endblock %}

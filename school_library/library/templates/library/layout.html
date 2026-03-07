@@ -78,33 +78,51 @@
             border-radius: 8px;
             box-sizing: border-box;
         }
-        .btn {
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 0.7rem 1.5rem;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: transform 0.2s, background-color 0.2s;
-        }
-        .btn:hover { transform: scale(1.02); background-color: #e6951a; }
-        .btn-primary { background-color: var(--primary-color); }
+        tr { transition: background-color 0.2s; }
+        tr:hover { background-color: #f9f9f9; }
+        .card { transition: box-shadow 0.3s; }
+        .card:hover { box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+        .btn { transition: all 0.2s; }
     </style>
 </head>
 <body>
     <nav>
-        <a href="{% url 'home' %}" class="logo">📚 智慧圖書館 (Django)</a>
+        <a href="/" class="logo">📚 智慧圖書館</a>
         <div class="links">
-            <a href="{% url 'home' %}">首頁</a>
-            <a href="{% url 'list_books' %}">書籍管理</a>
-            <a href="{% url 'list_students' %}">學生管理</a>
-            <a href="{% url 'list_loans' %}">借閱紀錄</a>
+            <a href="/">首頁</a>
+            <a href="/books">書籍管理</a>
+            <a href="/students">學生管理</a>
+            <a href="/loans">借閱紀錄</a>
+            <a href="/stats">統計分析</a>
+            <a href="/scan" style="background: var(--secondary-color); padding: 0.3rem 0.8rem; border-radius: 10px;">📷 掃描器</a>
+            
+            {% if user.is_authenticated %}
+            <span style="color: white; margin-left: 2rem; font-size: 0.9rem; border-left: 1px solid rgba(255,255,255,0.3); padding-left: 1.5rem;">
+                👤 {{ user.username }} ({{ user.groups.all.0.name|default:"系統管理員" }})
+            </span>
+            <form action="{% url 'logout' %}" method="post" style="display: inline; margin-left: 1rem;">
+                {% csrf_token %}
+                <button type="submit" style="background: transparent; border: none; color: white; cursor: pointer; font-weight: bold; font-size: 0.9rem;">🚪 登出</button>
+            </form>
+            {% endif %}
         </div>
     </nav>
+
     <div class="container">
+        {% if messages %}
+            {% for message in messages %}
+                <div style="padding: 1rem; border-radius: 10px; margin-bottom: 1rem; border: 1px solid; 
+                    {% if message.tags == 'success' %} background-color: #E8F5E9; color: var(--success-color); border-color: #C8E6C9;
+                    {% elif message.tags == 'error' %} background-color: #FFEBEE; color: var(--danger-color); border-color: #FFCDD2;
+                    {% else %} background-color: #E3F2FD; color: var(--primary-color); border-color: #BBDEFB; {% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
         {% block content %}{% endblock %}
     </div>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </body>
 </html>

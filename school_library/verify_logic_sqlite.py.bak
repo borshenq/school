@@ -1,12 +1,17 @@
 import sqlite3
+import datetime
 from datetime import date, timedelta
+
+# 註冊 SQLite 適配器以處理 Python 3.12+ 的 date 物件
+sqlite3.register_adapter(date, lambda d: d.isoformat())
+sqlite3.register_converter("DATE", lambda s: date.fromisoformat(s.decode()))
 
 # 模擬資料庫測試邏輯 (直接使用 SQLite)
 DB_PATH = "school_library.db"
 
 def run_test():
     print("🚀 開始進行系統邏輯快速驗證...\n")
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES)
     cursor = conn.cursor()
 
     # 1. 驗證圖書資料

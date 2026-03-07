@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理員登入 - 智慧圖書館</title>
+    <style>
+        body { font-family: sans-serif; background-color: #F0F4F8; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 2.5rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 350px; text-align: center; }
+        h1 { color: #4A90E2; margin-bottom: 2rem; }
+        .form-group { margin-bottom: 1.5rem; text-align: left; }
+        label { display: block; margin-bottom: 0.5rem; color: #666; font-weight: bold; }
+        input { width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn { background: #F5A623; color: white; padding: 0.8rem; border: none; border-radius: 25px; cursor: pointer; width: 100%; font-weight: bold; font-size: 1rem; margin-top: 1rem; }
+        .error { color: #E74C3C; margin-bottom: 1rem; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h1>📚 管理員登入</h1>
+        
+        {% if form.errors %}
+            <div class="error">帳號或密碼錯誤，請重新輸入。</div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>帳號 (學號或管理員編號)</label>
+                <input type="text" name="username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label>密碼</label>
+                <input type="password" name="password" required>
+            </div>
+            <button type="submit" class="btn">🚀 進入圖書管理系統</button>
+            <input type="hidden" name="next" value="{{ next }}">
+        </form>
+    </div>
+</body>
+</html>

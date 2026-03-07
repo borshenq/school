@@ -6,11 +6,11 @@
 1. 確保終端機位於 `school_library` 目錄。
 2. 執行初始化指令以產生測試資料：
    ```bash
-   python3 seed_data.py
+   python3 setup_groups.py && python3 create_test_users.py && python3 seed_django.py
    ```
 3. 啟動伺服器：
    ```bash
-   python3 -m uvicorn main:app --reload
+   python3 manage.py runserver
    ```
 4. 打開瀏覽器進入：`http://127.0.0.1:8000`
 

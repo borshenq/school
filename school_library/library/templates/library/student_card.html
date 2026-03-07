@@ -1,0 +1,76 @@
+{% extends "library/layout.html" %}
+
+{% block title %}借書證 - {{ student.name }}{% endblock %}
+
+{% block content %}
+<style>
+    @media print {
+        nav, .btn-no-print { display: none !important; }
+        body { background: white; }
+        .container { margin: 0; padding: 0; }
+        .card-container { box-shadow: none !important; border: 1px solid #ccc !important; }
+    }
+    .card-container {
+        width: 350px;
+        height: 200px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin: 2rem auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        overflow: hidden;
+        border: 2px solid var(--primary-color);
+    }
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 0.5rem;
+    }
+    .school-name { font-size: 1.2rem; font-weight: bold; color: var(--primary-color); }
+    .student-info { margin-top: 1rem; }
+    .student-info div { margin-bottom: 0.3rem; }
+    .barcode-area { text-align: center; margin-top: auto; }
+    #barcode { width: 100%; max-height: 60px; }
+</style>
+
+<div style="text-align: center; margin-bottom: 1rem;" class="btn-no-print">
+    <button onclick="window.print()" class="btn btn-primary">🖨️ 立即列印借書證</button>
+    <a href="/students" class="btn" style="background: #eee; color: #333; text-decoration: none;">🔙 返回名單</a>
+</div>
+
+<div class="card-container">
+    <div class="card-header">
+        <div class="school-name">🏫 智慧小學圖書館</div>
+        <div style="font-size: 0.8rem; color: #999;">學生借書證</div>
+    </div>
+    
+    <div class="student-info">
+        <div style="font-size: 1.1rem;"><strong>姓名：{{ student.name }}</strong></div>
+        <div style="color: #666;">班級：{{ student.grade }}</div>
+        <div style="color: #666;">學號：{{ student.student_id }}</div>
+    </div>
+
+    <div class="barcode-area">
+        <svg id="barcode"></svg>
+    </div>
+</div>
+
+<script>
+    window.onload = function() {
+        JsBarcode("#barcode", "{{ student.student_id }}", {
+            format: "CODE128",
+            width: 2,
+            height: 40,
+            displayValue: true,
+            fontSize: 14,
+            margin: 0
+        });
+    };
+</script>
+{% endblock %}

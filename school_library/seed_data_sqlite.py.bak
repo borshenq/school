@@ -26,6 +26,7 @@ for b in books_data:
     existing_copies = db.query(Book).filter(Book.isbn == b["isbn"]).count()
     new_book = Book(**b, copy_number=existing_copies + 1)
     db.add(new_book)
+    db.flush() # 確保下一次迴圈能算到這筆資料
 
 # 2. 產生 10 筆學生資料
 students_data = [

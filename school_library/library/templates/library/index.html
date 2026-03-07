@@ -5,7 +5,7 @@
 {% block content %}
 {% if error == 'limit_reached' %}
 <div style="background-color: #FFEBEE; color: var(--danger-color); padding: 1rem; border-radius: 10px; margin-bottom: 2rem; border: 1px solid var(--danger-color);">
-    🚫 借書失敗：該學生已達到借書上限（最多 {{ limit }} 本）。
+    🚫 借書失敗：該學生已達到借書上限（最多 {{ limit }} 本）。請先歸還舊書再借新書。
 </div>
 {% elif error == 'not_found' %}
 <div style="background-color: #FFF3E0; color: #E65100; padding: 1rem; border-radius: 10px; margin-bottom: 2rem; border: 1px solid #FFE0B2;">
@@ -14,7 +14,6 @@
 {% endif %}
 
 <h1 style="text-align: center; margin-bottom: 2rem;">早安！今天想看什麼書呢？</h1>
-
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
     <div style="background: white; padding: 1.5rem; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid var(--primary-color);">
         <p>總藏書量</p>
@@ -31,19 +30,61 @@
 </div>
 
 <div class="card">
-    {% if user.is_authenticated %}
     <h3 style="margin-top: 0;">快速登記借書</h3>
-    <form action="{% url 'borrow_book' %}" method="post" style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    <p style="color: #666; font-size: 0.9rem;">請輸入書本背後的 ID 與您的學號。</p>
+    <form action="/loans/borrow" method="post" style="display: flex; gap: 1rem; flex-wrap: wrap; position: relative;">
         {% csrf_token %}
-        <input type="number" name="book_id" placeholder="書籍 ID" required style="padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd; flex: 1; min-width: 150px;">
-        <input type="text" name="student_id" placeholder="學號 (例: S001)" required style="padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd; flex: 1; min-width: 150px;">
+        <input type="text" name="book_id" placeholder="館藏登錄號" required style="padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd; flex: 1; min-width: 150px;">
+        
+        <div style="flex: 1; min-width: 150px; position: relative;">
+            <input type="text" id="student_id_input" name="student_id" placeholder="學號 (輸入可搜尋...)" required autocomplete="off"
+                style="padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd; width: 100%; box-sizing: border-box;">
+            <div id="autocomplete-list" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; z-index: 1000; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; max-height: 200px; overflow-y: auto;">
+            </div>
+        </div>
+        
         <button type="submit" class="btn">🚀 登記借書</button>
     </form>
-    {% else %}
-    <div style="text-align: center; padding: 1rem;">
-        <p style="color: #666;">您目前是以訪客身份瀏覽。若要進行借書操作，請先登入管理員帳號。</p>
-        <a href="/admin/login/?next=/" class="btn btn-primary" style="text-decoration: none;">🔑 立即登入系統</a>
-    </div>
-    {% endif %}
 </div>
+
+<script>
+    const studentInput = document.getElementById('student_id_input');
+    const list = document.getElementById('autocomplete-list');
+
+    studentInput.addEventListener('input', async (e) => {
+        const val = e.target.value;
+        if (val.length < 1) {
+            list.style.display = 'none';
+            return;
+        }
+
+        const res = await fetch(`/api/students/search?q=${val}`);
+        const data = await res.json();
+
+        if (data.length > 0) {
+            list.innerHTML = '';
+            data.forEach(item => {
+                const div = document.createElement('div');
+                div.innerHTML = item.label;
+                div.style.padding = '0.8rem';
+                div.style.cursor = 'pointer';
+                div.style.borderBottom = '1px solid #eee';
+                div.addEventListener('click', () => {
+                    studentInput.value = item.id;
+                    list.style.display = 'none';
+                });
+                div.addEventListener('mouseover', () => div.style.backgroundColor = '#f0f0f0');
+                div.addEventListener('mouseout', () => div.style.backgroundColor = 'transparent');
+                list.appendChild(div);
+            });
+            list.style.display = 'block';
+        } else {
+            list.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (e.target !== studentInput) list.style.display = 'none';
+    });
+</script>
 {% endblock %}

@@ -1,22 +1,29 @@
-{% extends "layout.html" %}
+{% extends "library/layout.html" %}
 
 {% block title %}學生管理 - 智慧圖書館{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
     <h1>🧒 學生名單管理</h1>
     <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
         <form action="/students" method="get" style="display: flex; gap: 0.5rem; margin: 0;">
-            <input type="text" name="q" value="{{ search_query or '' }}" placeholder="搜尋姓名/學號/班級..." style="padding: 0.6rem; border-radius: 8px; border: 1px solid #ddd;">
+            <input type="text" name="q" value="{{ search_query|default:'' }}" placeholder="搜尋姓名/學號/班級..." style="padding: 0.6rem; border-radius: 8px; border: 1px solid #ddd;">
             <button type="submit" class="btn btn-primary" style="padding: 0.6rem 1rem;">🔍</button>
         </form>
         
+        {% if perms.library.add_student %}
         <form action="/students/import" method="post" enctype="multipart/form-data" style="margin: 0; display: flex; align-items: center; gap: 0.3rem;">
+            {% csrf_token %}
             <input type="file" name="file" accept=".csv" required style="font-size: 0.8rem; width: 150px;">
             <button type="submit" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background-color: var(--primary-color);">📥 匯入</button>
         </form>
+        {% endif %}
+
         <a href="/students/export" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; background-color: var(--success-color); text-decoration: none;">📤 匯出 CSV</a>
+        
+        {% if perms.library.add_student %}
         <button class="btn btn-primary" onclick="document.getElementById('add-student-form').scrollIntoView({behavior: 'smooth'})">➕ 新增學生</button>
+        {% endif %}
     </div>
 </div>
 
@@ -31,7 +38,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for student in students %}
+            {% for student in page_obj %}
             <tr>
                 <td><code>{{ student.student_id }}</code></td>
                 <td><strong>{{ student.name }}</strong></td>
@@ -40,20 +47,44 @@
                     <div style="display: flex; gap: 0.3rem;">
                         <a href="/students/{{ student.id }}/history" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; text-decoration: none; background-color: var(--primary-color);">📜 歷史</a>
                         <a href="/students/{{ student.id }}/card" class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem; text-decoration: none; background-color: var(--secondary-color);">🪪 借書證</a>
+                        
+                        {% if perms.library.delete_student %}
                         <form action="/students/delete/{{ student.id }}" method="post" style="margin: 0;" onsubmit="return confirm('確定要刪除這位學生嗎？ (若仍有借書未還將無法刪除)');">
+                            {% csrf_token %}
                             <button type="submit" class="btn" style="background-color: var(--danger-color); padding: 0.3rem 0.6rem; font-size: 0.75rem;">🗑️</button>
                         </form>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+        {% if page_obj.has_previous %}
+            <a href="?page=1&q={{ search_query|default:'' }}" class="btn btn-primary" style="padding: 0.3rem 0.8rem; text-decoration: none;">« 第一頁</a>
+            <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query|default:'' }}" class="btn btn-primary" style="padding: 0.3rem 0.8rem; text-decoration: none;">‹ 上一頁</a>
+        {% endif %}
+        
+        <span style="padding: 0.3rem 0.8rem; background: white; border-radius: 20px; border: 1px solid #ddd; font-size: 0.9rem;">
+            第 {{ page_obj.number }} 頁 / 共 {{ page_obj.paginator.num_pages }} 頁
+        </span>
+        
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&q={{ search_query|default:'' }}" class="btn btn-primary" style="padding: 0.3rem 0.8rem; text-decoration: none;">下一頁 ›</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}&q={{ search_query|default:'' }}" class="btn btn-primary" style="padding: 0.3rem 0.8rem; text-decoration: none;">最後一頁 »</a>
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
 
+{% if perms.library.add_student %}
 <div id="add-student-form" class="card" style="border-top: 5px solid var(--secondary-color);">
     <h3>➕ 新增學生資料</h3>
     <form action="/students/add" method="post">
+        {% csrf_token %}
         <div class="form-group">
             <label>姓名</label>
             <input type="text" name="name" class="form-control" placeholder="請輸入學生姓名" required>
@@ -61,7 +92,8 @@
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
             <div class="form-group">
                 <label>學號</label>
-                <input type="text" name="student_id" class="form-control" placeholder="例如: S004" required>
+                <input type="text" name="student_id" class="form-control" placeholder="例如: S004" required 
+                    pattern="[Ss]\d{3,5}" title="學號格式應為 S 開頭後接 3-5 位數字 (如: S001)">
             </div>
             <div class="form-group">
                 <label>班級</label>
@@ -71,4 +103,5 @@
         <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">確認新增學生</button>
     </form>
 </div>
+{% endif %}
 {% endblock %}
